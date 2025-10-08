@@ -1,8 +1,5 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
-scripts:
-  sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
-  ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
 ---
 
 ## User Input
@@ -15,7 +12,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
+1. Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory
@@ -58,14 +55,63 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Task phases**: Setup, Tests, Core, Integration, Polish
    - **Task dependencies**: Sequential vs parallel execution rules
    - **Task details**: ID, description, file paths, parallel markers [P]
+   - **Agent assignments**: Extract `[agent_filename.md]` annotations if present
    - **Execution flow**: Order and dependency requirements
+
+   **NEW - Agent Assignment Detection**:
+   - Check each task line for `[{agent}.md]` pattern at end of line
+   - If present: Task uses **delegated mode** (execute with specialist agent)
+   - If absent: Task uses **direct mode** (original implementation behavior)
+   - Parse pattern: `\[(.+?\.md)\]$` to extract agent filename
+
+   **NEW - Agent File Validation**:
+   - If any agent assignments detected:
+     - Scan `.claude/agents/` to collect all unique agent filenames referenced
+     - Validate each agent file exists
+     - If missing: **ERROR** "Agent file not found: .claude/agents/{agent}.md. Run /provide-claude-team to regenerate."
+   - If no agent assignments: Skip validation (backward compatible mode)
 
 5. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
-   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
+   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Verify each phase completion before proceeding
+
+   **NEW - Task Execution Modes**:
+
+   **A) Delegated Mode** (when task has `[agent.md]` assignment):
+   ```
+   For task with agent assignment:
+   1. Read agent file from `.claude/agents/{agent_filename}.md`
+   2. Extract agent's full context (frontmatter + all sections)
+   3. Execute task using agent's specialized context:
+      "You are acting as the agent defined in .claude/agents/{agent_filename}.md.
+
+       Agent context:
+       {full_agent_file_content}
+
+       Now execute this task:
+       Task ID: {task_id}
+       Description: {task_description}
+       File paths: {file_paths}
+
+       Generate the code and indicate which files were created/modified."
+   4. Collect generated code from agent's response
+   5. Write code to specified file paths
+   6. Mark task as [X] completed in tasks.md
+   ```
+
+   **B) Direct Mode** (when task has NO agent assignment):
+   ```
+   Execute task directly (original behavior):
+   1. Analyze task requirements
+   2. Generate implementation
+   3. Write to file paths
+   4. Mark task as [X] completed
+   ```
+
+   **Backward Compatibility**: If tasks.md has no agent assignments at all, entire file runs in direct mode (original /implement behavior preserved)
 
 6. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
@@ -76,11 +122,49 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 7. Progress tracking and error handling:
    - Report progress after each completed task
-   - Halt execution if any non-parallel task fails
-   - For parallel tasks [P], continue with successful tasks, report failed ones
-   - Provide clear error messages with context for debugging
-   - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
+
+   **NEW - Enhanced Progress Reporting** (when using agents):
+   ```
+   Executing Phase 2: Core Implementation
+     ⏩ T010: Create User model [database_architect.md] - IN PROGRESS
+        [database_architect.md] Analyzing schema requirements...
+     ✓ T010: Create User model [database_architect.md] - COMPLETED
+        Files created: src/models/user.py
+   ```
+
+   **NEW - Enhanced Failure Handling** (per clarification Q3):
+
+   When a task fails:
+
+   1. **Report failure with full context**:
+      ```
+      ✗ FAILED: T015 - Create payment endpoint
+        Agent: api_developer.md (if delegated) or "direct mode"
+        Error: {error_message}
+        File: {file_path_attempted}
+      ```
+
+   2. **Identify dependency chains**:
+      - Tasks in same phase without [P] marker → sequential dependency
+      - Tasks modifying same file paths → file dependency
+      - Later phase tasks → phase dependency
+
+   3. **Halt only dependent tasks** (not everything):
+      - Mark dependent tasks in same chain as SKIPPED
+      - Reason: "Depends on failed {task_id}"
+      - Continue executing independent parallel tasks
+
+   4. **Report impact**:
+      ```
+      Impact Analysis:
+        Halted (dependent): T016, T017, T018
+        Continuing (independent): T020, T021, T025
+      ```
+
+   5. **For parallel tasks [P]**: Continue with successful ones, report failed
+
+   **Backward Compatible**: Non-agent tasks continue with original error handling
 
 8. Completion validation:
    - Verify all required tasks are completed
