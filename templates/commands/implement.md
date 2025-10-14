@@ -74,41 +74,86 @@ You **MUST** consider the user input before proceeding (if not empty).
 5. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
+   - **Documentation-First Approach**: MANDATORY web search before implementation
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Verify each phase completion before proceeding
+
+   **NEW - MANDATORY Documentation Search Workflow**:
+
+   For EVERY implementation task (before writing ANY code):
+
+   1. **Extract key technologies and concepts from the task**:
+      - Programming language, framework, libraries mentioned
+      - Design patterns or architectural concepts
+      - APIs or services being integrated
+      - Data structures or algorithms needed
+
+   2. **Perform web search for documentation**:
+      ```
+      Use WebSearch tool with query like:
+      "[technology] [concept] official documentation best practices 2024"
+
+      Examples:
+      - "React hooks useState useEffect official documentation 2024"
+      - "Python FastAPI async endpoints error handling best practices"
+      - "PostgreSQL jsonb indexes performance optimization documentation"
+      - "Node.js Express middleware authentication JWT implementation"
+      ```
+
+   3. **Document findings before implementation**:
+      - Record which documentation was consulted
+      - Note key implementation guidelines discovered
+      - Identify any warnings or deprecated approaches
+      - List best practices from official sources
+
+   4. **Only THEN proceed with implementation**:
+      - Apply the patterns from documentation
+      - Follow the official guidelines discovered
+      - Avoid deprecated or discouraged approaches
 
    **NEW - Task Execution Modes**:
 
    **A) Delegated Mode** (when task has `[agent.md]` assignment):
    ```
    For task with agent assignment:
-   1. Read agent file from `.claude/agents/{agent_filename}.md`
-   2. Extract agent's full context (frontmatter + all sections)
-   3. Execute task using agent's specialized context:
+   1. MANDATORY: Search for documentation
+      - Extract technologies from task description
+      - Use WebSearch: "[tech] [feature] official documentation 2024"
+      - Document key findings and best practices
+   2. Read agent file from `.claude/agents/{agent_filename}.md`
+   3. Extract agent's full context (frontmatter + all sections)
+   4. Execute task using agent's specialized context:
       "You are acting as the agent defined in .claude/agents/{agent_filename}.md.
 
        Agent context:
        {full_agent_file_content}
 
-       Now execute this task:
+       Documentation consulted:
+       {documentation_findings}
+
+       Now execute this task following the documented best practices:
        Task ID: {task_id}
        Description: {task_description}
        File paths: {file_paths}
 
        Generate the code and indicate which files were created/modified."
-   4. Collect generated code from agent's response
-   5. Write code to specified file paths
-   6. Mark task as [X] completed in tasks.md
+   5. Collect generated code from agent's response
+   6. Write code to specified file paths
+   7. Mark task as [X] completed in tasks.md
    ```
 
    **B) Direct Mode** (when task has NO agent assignment):
    ```
-   Execute task directly (original behavior):
-   1. Analyze task requirements
-   2. Generate implementation
-   3. Write to file paths
-   4. Mark task as [X] completed
+   Execute task directly with documentation search:
+   1. MANDATORY: Search for documentation
+      - Extract technologies from task description
+      - Use WebSearch: "[tech] [feature] official documentation 2024"
+      - Document key findings and best practices
+   2. Analyze task requirements with documentation context
+   3. Generate implementation following documented patterns
+   4. Write to file paths
+   5. Mark task as [X] completed
    ```
 
    **Backward Compatibility**: If tasks.md has no agent assignments at all, entire file runs in direct mode (original /implement behavior preserved)
@@ -124,14 +169,25 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Report progress after each completed task
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
-   **NEW - Enhanced Progress Reporting** (when using agents):
+   **NEW - Documentation Verification & Progress Reporting**:
    ```
    Executing Phase 2: Core Implementation
+     📚 T010: Searching documentation for "Python SQLAlchemy User model best practices"...
+        Found: Official SQLAlchemy ORM documentation
+        Found: Best practices for user authentication models
+        Key insight: Use declarative_base() for model definitions
      ⏩ T010: Create User model [database_architect.md] - IN PROGRESS
-        [database_architect.md] Analyzing schema requirements...
+        [database_architect.md] Implementing with documented patterns...
      ✓ T010: Create User model [database_architect.md] - COMPLETED
+        Documentation consulted: SQLAlchemy 2.0 docs, security best practices
         Files created: src/models/user.py
    ```
+
+   **Documentation Search Verification**:
+   - MUST show documentation search step for EVERY task
+   - MUST list what documentation was found
+   - MUST show key insights or patterns discovered
+   - If no relevant documentation found, MUST still search and report "No specific documentation found, using general [language] patterns"
 
    **NEW - Enhanced Failure Handling** (per clarification Q3):
 
@@ -168,9 +224,19 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 8. Completion validation:
    - Verify all required tasks are completed
+   - **Verify documentation was consulted for each task**:
+     ```
+     Documentation Compliance Report:
+     ✓ T001: Consulted 2 documentation sources
+     ✓ T002: Consulted 3 documentation sources
+     ✗ T003: No documentation search performed (VIOLATION)
+
+     Compliance Rate: 66% (2/3 tasks followed documentation-first approach)
+     ```
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
-   - Report final status with summary of completed work
+   - **Confirm implementations follow documented best practices**
+   - Report final status with summary of completed work and documentation sources used
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/tasks` first to regenerate the task list.

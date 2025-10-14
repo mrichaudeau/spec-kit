@@ -70,6 +70,30 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Independent test criteria for each story
    - Suggested MVP scope (typically just User Story 1)
 
+6. **Workflow Guidance**: After reporting the summary, display the following workflow guidance message to help users optimize their implementation with specialized agents:
+
+```markdown
+## Next Steps
+
+To optimize task execution with specialized agents:
+
+1. Run `/speckit.provide-claude-team` to generate agent files tailored to your tasks
+2. Restart Claude Code to enable agent discovery (agents load on startup)
+3. Run `/speckit.implement` to execute tasks with automatic agent delegation
+
+**Note**: If you skip step 1, tasks will execute normally without specialized agents.
+```
+
+**Display Requirements**:
+- Show message AFTER tasks.md is successfully written
+- Show message BEFORE command exits
+- Use exact H2 heading: "## Next Steps"
+- Include exactly 3 numbered steps in the order shown
+- Wrap command names in backticks: `/speckit.provide-claude-team`, `/speckit.implement`
+- Include brief explanatory text for each step
+- Include the note about agents being optional
+- Separate from task summary with a blank line for readability
+
 Context for task generation: {ARGS}
 
 The tasks.md should be immediately executable - each task must be specific enough that an LLM can complete it without additional context.
