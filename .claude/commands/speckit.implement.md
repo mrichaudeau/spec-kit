@@ -12,7 +12,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. Run `{SCRIPT}` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory
@@ -51,46 +51,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
 
-4. **Project Setup Verification**:
-   - **REQUIRED**: Create/verify ignore files based on actual project setup:
-   
-   **Detection & Creation Logic**:
-   - Check if the following command succeeds to determine if the repository is a git repo (create/verify .gitignore if so):
-
-     ```sh
-     git rev-parse --git-dir 2>/dev/null
-     ```
-   - Check if Dockerfile* exists or Docker in plan.md → create/verify .dockerignore
-   - Check if .eslintrc* or eslint.config.* exists → create/verify .eslintignore
-   - Check if .prettierrc* exists → create/verify .prettierignore
-   - Check if .npmrc or package.json exists → create/verify .npmignore (if publishing)
-   - Check if terraform files (*.tf) exist → create/verify .terraformignore
-   - Check if .helmignore needed (helm charts present) → create/verify .helmignore
-   
-   **If ignore file already exists**: Verify it contains essential patterns, append missing critical patterns only
-   **If ignore file missing**: Create with full pattern set for detected technology
-   
-   **Common Patterns by Technology** (from plan.md tech stack):
-   - **Node.js/JavaScript**: `node_modules/`, `dist/`, `build/`, `*.log`, `.env*`
-   - **Python**: `__pycache__/`, `*.pyc`, `.venv/`, `venv/`, `dist/`, `*.egg-info/`
-   - **Java**: `target/`, `*.class`, `*.jar`, `.gradle/`, `build/`
-   - **C#/.NET**: `bin/`, `obj/`, `*.user`, `*.suo`, `packages/`
-   - **Go**: `*.exe`, `*.test`, `vendor/`, `*.out`
-   - **Ruby**: `.bundle/`, `log/`, `tmp/`, `*.gem`, `vendor/bundle/`
-   - **PHP**: `vendor/`, `*.log`, `*.cache`, `*.env`
-   - **Rust**: `target/`, `debug/`, `release/`, `*.rs.bk`, `*.rlib`, `*.prof*`, `.idea/`, `*.log`, `.env*`
-   - **Kotlin**: `build/`, `out/`, `.gradle/`, `.idea/`, `*.class`, `*.jar`, `*.iml`, `*.log`, `.env*`
-   - **C++**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.so`, `*.a`, `*.exe`, `*.dll`, `.idea/`, `*.log`, `.env*`
-   - **C**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.a`, `*.so`, `*.exe`, `Makefile`, `config.log`, `.idea/`, `*.log`, `.env*`
-   - **Universal**: `.DS_Store`, `Thumbs.db`, `*.tmp`, `*.swp`, `.vscode/`, `.idea/`
-   
-   **Tool-Specific Patterns**:
-   - **Docker**: `node_modules/`, `.git/`, `Dockerfile*`, `.dockerignore`, `*.log*`, `.env*`, `coverage/`
-   - **ESLint**: `node_modules/`, `dist/`, `build/`, `coverage/`, `*.min.js`
-   - **Prettier**: `node_modules/`, `dist/`, `build/`, `coverage/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
-   - **Terraform**: `.terraform/`, `*.tfstate*`, `*.tfvars`, `.terraform.lock.hcl`
-
-5. Parse tasks.md structure and extract:
+4. Parse tasks.md structure and extract:
    - **Task phases**: Setup, Tests, Core, Integration, Polish
    - **Task dependencies**: Sequential vs parallel execution rules
    - **Task details**: ID, description, file paths, parallel markers [P]
@@ -113,86 +74,41 @@ You **MUST** consider the user input before proceeding (if not empty).
 5. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
-   - **Documentation-First Approach**: MANDATORY web search before implementation
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Verify each phase completion before proceeding
-
-   **NEW - MANDATORY Documentation Search Workflow**:
-
-   For EVERY implementation task (before writing ANY code):
-
-   1. **Extract key technologies and concepts from the task**:
-      - Programming language, framework, libraries mentioned
-      - Design patterns or architectural concepts
-      - APIs or services being integrated
-      - Data structures or algorithms needed
-
-   2. **Perform web search for documentation**:
-      ```
-      Use WebSearch tool with query like:
-      "[technology] [concept] official documentation best practices 2024"
-
-      Examples:
-      - "React hooks useState useEffect official documentation 2024"
-      - "Python FastAPI async endpoints error handling best practices"
-      - "PostgreSQL jsonb indexes performance optimization documentation"
-      - "Node.js Express middleware authentication JWT implementation"
-      ```
-
-   3. **Document findings before implementation**:
-      - Record which documentation was consulted
-      - Note key implementation guidelines discovered
-      - Identify any warnings or deprecated approaches
-      - List best practices from official sources
-
-   4. **Only THEN proceed with implementation**:
-      - Apply the patterns from documentation
-      - Follow the official guidelines discovered
-      - Avoid deprecated or discouraged approaches
 
    **NEW - Task Execution Modes**:
 
    **A) Delegated Mode** (when task has `[agent.md]` assignment):
    ```
    For task with agent assignment:
-   1. MANDATORY: Search for documentation
-      - Extract technologies from task description
-      - Use WebSearch: "[tech] [feature] official documentation 2024"
-      - Document key findings and best practices
-   2. Read agent file from `.claude/agents/{agent_filename}.md`
-   3. Extract agent's full context (frontmatter + all sections)
-   4. Execute task using agent's specialized context:
+   1. Read agent file from `.claude/agents/{agent_filename}.md`
+   2. Extract agent's full context (frontmatter + all sections)
+   3. Execute task using agent's specialized context:
       "You are acting as the agent defined in .claude/agents/{agent_filename}.md.
 
        Agent context:
        {full_agent_file_content}
 
-       Documentation consulted:
-       {documentation_findings}
-
-       Now execute this task following the documented best practices:
+       Now execute this task:
        Task ID: {task_id}
        Description: {task_description}
        File paths: {file_paths}
 
        Generate the code and indicate which files were created/modified."
-   5. Collect generated code from agent's response
-   6. Write code to specified file paths
-   7. Mark task as [X] completed in tasks.md
+   4. Collect generated code from agent's response
+   5. Write code to specified file paths
+   6. Mark task as [X] completed in tasks.md
    ```
 
    **B) Direct Mode** (when task has NO agent assignment):
    ```
-   Execute task directly with documentation search:
-   1. MANDATORY: Search for documentation
-      - Extract technologies from task description
-      - Use WebSearch: "[tech] [feature] official documentation 2024"
-      - Document key findings and best practices
-   2. Analyze task requirements with documentation context
-   3. Generate implementation following documented patterns
-   4. Write to file paths
-   5. Mark task as [X] completed
+   Execute task directly (original behavior):
+   1. Analyze task requirements
+   2. Generate implementation
+   3. Write to file paths
+   4. Mark task as [X] completed
    ```
 
    **Backward Compatibility**: If tasks.md has no agent assignments at all, entire file runs in direct mode (original /implement behavior preserved)
@@ -204,29 +120,18 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Integration work**: Database connections, middleware, logging, external services
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
-8. Progress tracking and error handling:
+7. Progress tracking and error handling:
    - Report progress after each completed task
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
-   **NEW - Documentation Verification & Progress Reporting**:
+   **NEW - Enhanced Progress Reporting** (when using agents):
    ```
    Executing Phase 2: Core Implementation
-     📚 T010: Searching documentation for "Python SQLAlchemy User model best practices"...
-        Found: Official SQLAlchemy ORM documentation
-        Found: Best practices for user authentication models
-        Key insight: Use declarative_base() for model definitions
      ⏩ T010: Create User model [database_architect.md] - IN PROGRESS
-        [database_architect.md] Implementing with documented patterns...
+        [database_architect.md] Analyzing schema requirements...
      ✓ T010: Create User model [database_architect.md] - COMPLETED
-        Documentation consulted: SQLAlchemy 2.0 docs, security best practices
         Files created: src/models/user.py
    ```
-
-   **Documentation Search Verification**:
-   - MUST show documentation search step for EVERY task
-   - MUST list what documentation was found
-   - MUST show key insights or patterns discovered
-   - If no relevant documentation found, MUST still search and report "No specific documentation found, using general [language] patterns"
 
    **NEW - Enhanced Failure Handling** (per clarification Q3):
 
@@ -263,20 +168,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 8. Completion validation:
    - Verify all required tasks are completed
-   - **Verify documentation was consulted for each task**:
-     ```
-     Documentation Compliance Report:
-     ✓ T001: Consulted 2 documentation sources
-     ✓ T002: Consulted 3 documentation sources
-     ✗ T003: No documentation search performed (VIOLATION)
-
-     Compliance Rate: 66% (2/3 tasks followed documentation-first approach)
-     ```
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
-   - **Confirm implementations follow documented best practices**
-   - Report final status with summary of completed work and documentation sources used
+   - Report final status with summary of completed work
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/tasks` first to regenerate the task list.
-
